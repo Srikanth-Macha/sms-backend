@@ -1,30 +1,36 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import createApi, { Request, Response } from "lambda-api";
 
-/**
- *
- * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
- * @param {Object} event - API Gateway Lambda Proxy Input Format
- *
- * Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
- * @returns {Object} object - API Gateway Lambda Proxy Output Format
- *
- */
+const app = createApi();
 
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-    try {
-        return {
-            statusCode: 200,
-            body: JSON.stringify({
-                message: 'This is the School Management System (SMS)',
-            }),
-        };
-    } catch (err) {
-        console.log(err);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({
-                message: 'some error happened',
-            }),
-        };
+// Global Exception Filter
+app.use((err, req, res, next) => {
+    // Use Error specific handling
+    console.error(err);
+    res.send({ status: 500, message: 'Internal server error' });
+
+    if (next) next();
+});
+
+app.get('/default', (_req: Request, res: Response) => {
+    res.send({ message: 'server is healthy and running' });
+});
+
+app.post('/post-check', (req: Request, res: Response) => {
+    const age: number = req.body?.age;
+    const jsonArray = [];
+
+    for (let index = 0; index < age; index++) {
+        jsonArray.push({ message: `Use age is ${index}` });
     }
+
+    res.status(201).send(jsonArray);
+});
+
+
+export const lambdaHandler: APIGatewayProxyHandlerV2 = async (event, context) => {
+    event.pathParameters = event.pathParameters || {};
+    event.queryStringParameters = event.queryStringParameters || {};
+
+    return app.run(event, context);
 };

@@ -1,7 +1,8 @@
-import { APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import { APIGatewayProxyEventV2, APIGatewayProxyHandlerV2 } from 'aws-lambda';
 import createApi, { Request, Response } from "lambda-api";
 
 const app = createApi();
+let globalEvent: APIGatewayProxyEventV2;
 
 // Global Exception Filter
 app.use((err, req, res, next) => {
@@ -18,13 +19,12 @@ app.get('/default', (_req: Request, res: Response) => {
 
 app.post('/post-check', (req: Request, res: Response) => {
     const age: number = req.body?.age;
-    const jsonArray = [];
 
-    for (let index = 0; index < age; index++) {
-        jsonArray.push({ message: `Use age is ${index}` });
-    }
+    console.log('request version is ', req?.version);
+    console.log('whole event is ', globalEvent);
 
-    res.status(201).send(jsonArray);
+    const { app, ...print } = req;
+    res.status(201).send(JSON.stringify(print));
 });
 
 
@@ -32,5 +32,6 @@ export const lambdaHandler: APIGatewayProxyHandlerV2 = async (event, context) =>
     event.pathParameters = event.pathParameters || {};
     event.queryStringParameters = event.queryStringParameters || {};
 
+    globalEvent = event;
     return app.run(event, context);
 };

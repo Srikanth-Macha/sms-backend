@@ -27,12 +27,12 @@ Resources:
       - x86_64
       Events:
         Default:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /default
             Method: get
         PostCheck:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /post-check
             Method: post

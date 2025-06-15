@@ -1,8 +1,9 @@
-import { APIGatewayProxyEventV2, APIGatewayProxyHandlerV2 } from 'aws-lambda';
+import { APIGatewayProxyHandlerV2 } from 'aws-lambda';
 import createApi, { Request, Response } from "lambda-api";
+import { Logger } from "@aws-lambda-powertools/logger";
 
+const logger = new Logger({ serviceName: 'user-backend' });
 const app = createApi();
-let globalEvent: APIGatewayProxyEventV2;
 
 // Global Exception Filter
 app.use((err, req, res, next) => {
@@ -17,14 +18,19 @@ app.get('/default', (_req: Request, res: Response) => {
     res.send({ message: 'server is healthy and running' });
 });
 
-app.post('/post-check', (req: Request, res: Response) => {
+app.post('/post-check', async (req: Request, res: Response) => {
     const age: number = req.body?.age;
+    logger.info('age from request', { age });
 
-    console.log('request version is ', req?.version);
-    console.log('whole event is ', globalEvent);
+    if (!age) {
+        return res.status(400).send({ message: 'age is invalid' });
+    }
 
-    const { app, ...print } = req;
-    res.status(201).send(JSON.stringify(print));
+    if (age < 18) {
+        return res.status(403).send({ message: 'children are not allowed' })
+    }
+
+    res.status(200).send({ message: 'You are eligible for this mess' });
 });
 
 
@@ -32,6 +38,5 @@ export const lambdaHandler: APIGatewayProxyHandlerV2 = async (event, context) =>
     event.pathParameters = event.pathParameters || {};
     event.queryStringParameters = event.queryStringParameters || {};
 
-    globalEvent = event;
     return app.run(event, context);
 };
